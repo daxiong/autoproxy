@@ -43,27 +43,55 @@ def apply(proxy):
 	print 'trying to apply %s by randomize'%(proxy);
 	proxy = proxy.split(':');
 	
+	current_active_dirver = getActiveDriverName();
+	print 'dirver %s is current active,so it will by applied this rule'%(current_active_dirver)
+	
+	apply_command = '''
+networksetup -setwebproxystate '%s' 'on'
+networksetup -setwebproxy '%s' %s %s
+	'''%(current_active_dirver,current_active_dirver, proxy[0], proxy[1]);
+	os.system(apply_command);
+	print 'apply success';
+
+def getActiveDriverName():
 	current_active_driver_comannd = '''
 SERVICE_GUID=`printf "open\nget State:/Network/Global/IPv4\nd.show" | \
 scutil | grep "PrimaryService" | awk '{print $3}'`
- 
+
 SERVICE_NAME=`printf "open\nget Setup:/Network/Service/$SERVICE_GUID\nd.show" |\
 scutil | grep "UserDefinedName" | awk -F': ' '{print $2}'`
 
 echo $SERVICE_NAME
-	'''
+        '''
 
-	current_active_dirver = os.popen(current_active_driver_comannd);
-	current_active_dirver = current_active_dirver.read();
-	current_active_dirver = current_active_dirver.replace('\n', '');
-	print 'dirver %s is current active,so it will by applied this rule'%(current_active_dirver)
+        current_active_dirver = os.popen(current_active_driver_comannd);
+        current_active_dirver = current_active_dirver.read();
+        current_active_dirver = current_active_dirver.replace('\n', '');
+
+	return current_active_dirver;
+
+
+def delete():
+	current_active_dirver = getActiveDriverName();
+
+	command = '''
+networksetup -setwebproxystate '%s' 'off'
+	'''%(current_active_dirver)
+	os.system(command);
+	print 'disabled web proxy for %s'%(current_active_dirver);
+
+if __name__ == '__main__':
+	if len(sys.argv) > 1:
+		argv = sys.argv[1];
+		if argv == '--redown':
+			redown = True;
+		elif argv == '--delete':
+			delete();
+			exit();	
+		else:
+			print 'argv error,example:\n --redown \n --delete';
+			exit();
+	else:
+		redown = False;
 	
-	apply_command = '''
-networksetup -setwebproxy '%s' %s %s
-	'''%(current_active_dirver, proxy[0], proxy[1]);
-	os.system(apply_command);
-	print 'apply success';
-
-	pass;
-
-getNewProxyFromWeb();
+	getNewProxyFromWeb(redown);
